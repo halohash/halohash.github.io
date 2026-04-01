@@ -2,4 +2,22 @@
 layout: none
 ---
 
-soon
+---
+layout: none
+nav: true
+---
+
+<!DOCTYPE html>
+<title>HaloHash</title>
+
+<div>Last Updated on {{ site.time | date: "%Y-%m-%d %H:%M:%S" }}</div>
+
+<ul>
+  {% for page in site.html_pages %}
+    <li>
+      <a href=".{{ page.url }}">
+        {{ page.titlet | default: page.url }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>
