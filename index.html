@@ -10,10 +10,12 @@ nav: true
 
 <ul>
   {% for page in site.html_pages %}
-    <li>
-      <a href=".{{ page.url }}">
-        {{ page.titlet | default: page.url }}
-      </a>
-    </li>
+    {% if page.title %}
+      <li>
+        <a href=".{{ page.url }}">
+          {{ page.title }}
+        </a>
+      </li>
+    {% endif %}
   {% endfor %}
 </ul>
