@@ -1,4 +1,2 @@
-plugins:
-  - jekyll-remote-include
-
 safe: false
+ktvinfo: "test"
