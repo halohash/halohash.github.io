@@ -6,6 +6,16 @@ nav: true
 <!DOCTYPE html>
 <title>HaloHash</title>
 
+<style>
+  .newstyke {
+    top: 0px;
+    right: 0px;
+    position: sticky;
+  }
+  body, html {
+    font-family: 'Trebuchet MS', 'Roboto', Arial, sans-serif;
+  }
+</style>
 <div>Last Updated on {{ site.time | date: "%Y-%m-%d %H:%M:%S" }}</div>
 
 <ul>
@@ -19,3 +29,10 @@ nav: true
     {% endif %}
   {% endfor %}
 </ul>
+    <object width="640px" height="360" class="newstyke">
+        <embed src="https://halohash.github.io/directv/filmstrip.v3.swf?filmstripxml=https%3a%2f%2fhalohash.github.io%2fnews.html" width="640px" height="360px"></embed>
+    </object>
+
+<noscript>
+OOPS! You have to have javascript enabled for this webpage.
+</noscript>
