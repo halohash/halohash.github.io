@@ -71,36 +71,54 @@ function loadSWF() {
     ruffle = player;
 }
 
-function startRecording() {
-    const canvas = document.querySelector("#player canvas");
-
-    if (!canvas) {
-        alert("Load a SWF first!");
-        return;
-    }
-
-    stream = canvas.captureStream(30); // 30 FPS
-    recorder = new MediaRecorder(stream, {
-        mimeType: "video/webm; codecs=vp9"
+async function getCanvas() {
+    return new Promise(resolve => {
+        const check = setInterval(() => {
+            const canvas = document.querySelector("#player canvas");
+            if (canvas) {
+                clearInterval(check);
+                resolve(canvas);
+            }
+        }, 200);
     });
+}
 
-    chunks = [];
+async function startRecording() {
+    const canvas = await getCanvas();
 
-    recorder.ondataavailable = e => {
-        if (e.data.size > 0) chunks.push(e.data);
-    };
+    // Force user interaction (helps Chrome)
+    canvas.focus();
 
-    recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
+    try {
+        const stream = canvas.captureStream(30);
 
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "recording.webm";
-        a.click();
-    };
+        recorder = new MediaRecorder(stream, {
+            mimeType: "video/webm"
+        });
 
-    recorder.start();
+        chunks = [];
+
+        recorder.ondataavailable = e => {
+            if (e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: "video/webm" });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "recording.webm";
+            a.click();
+        };
+
+        recorder.start();
+        console.log("Recording started");
+
+    } catch (e) {
+        alert("Recording failed: " + e.message);
+        console.error(e);
+    }
 }
 
 function stopRecording() {
