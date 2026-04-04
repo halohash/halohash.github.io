@@ -4,35 +4,94 @@ nav: true
 ---
 
 <!DOCTYPE html>
-<title>HaloHash</title>
-<script>window.RufflePlayer=window.RufflePlayer||{};window.RufflePlayer.config={"autoplay":"on","unmuteOverlay":"hidden","showSwfDownload":false,"splashScreen": false};</script>
-<style>
-  .newstyke,#container {
-    top: 0px;
-    right: 0px;
-    position: sticky;
-  }
-  body, html {
-    font-family: 'Trebuchet MS', 'Roboto', Arial, sans-serif;
-  }
-</style>
-<div>Last Updated on {{ site.time | date: "%Y-%m-%d %H:%M:%S" }}</div>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>HaloHash</title>
 
-<ul>
-  {% for page in site.html_pages %}
-    {% if page.title %}
-      <li>
-        <a href=".{{ page.url }}">
-          {{ page.title }}
-        </a>
-      </li>
-    {% endif %}
-  {% endfor %}
-</ul>
-    <object width="640px" height="360" class="newstyke">
-        <embed src="https://halohash.github.io/directv/filmstrip.v3.swf?filmstripxml=https%3a%2f%2fhalohash.github.io%2fnews.html" width="640px" height="360px"></embed>
-    </object>
+  <!-- 98.css -->
+  <link rel="stylesheet" href="https://unpkg.com/7.css">
 
-<noscript>
-OOPS! You have to have javascript enabled for this webpage.
-</noscript>
+  <!-- Ruffle config -->
+  <script>
+    window.RufflePlayer = window.RufflePlayer || {};
+    window.RufflePlayer.config = {
+      autoplay: "on",
+      unmuteOverlay: "hidden",
+      showSwfDownload: false,
+      splashScreen: false
+    };
+  </script>
+
+  <style>
+    body {
+      margin: 20px;
+      background-image: url("https://file.garden/aUYIWVAKvQxCBY-_/database/images/752ad3bd.png");
+    }
+
+    .window {
+      width: fit-content;
+      margin-bottom: 20px;
+    }
+
+    .ruffle-container {
+      position: relative;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Main Window -->
+  <div class="window glass">
+    <div class="title-bar">
+      <div class="title-bar-text">HaloHash</div>
+    </div>
+
+    <div class="window-body">
+      <p>Last Updated on {{ site.time | date: "%Y-%m-%d %H:%M:%S" }}</p>
+
+      <ul class="tree-view">
+        {% for page in site.html_pages %}
+          {% if page.title %}
+            <li>
+              <a href=".{{ page.url }}">
+                {{ page.title }}
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Player Window -->
+  <div class="window glass" style="width: 660px;">
+    <div class="title-bar">
+      <div class="title-bar-text">News</div>
+    </div>
+
+    <div class="window-body ruffle-container">
+      <object width="640" height="360">
+        <embed 
+          src="https://halohash.github.io/directv/filmstrip.v3.swf?filmstripxml=https%3A%2F%2Fhalohash.github.io%2Fnews.html"
+          width="640"
+          height="360">
+        </embed>
+      </object>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="window glass">
+      <div class="title-bar">
+        <div class="title-bar-text">Error</div>
+      </div>
+      <div class="window-body">
+        OOPS! You have to have javascript enabled for this webpage.
+      </div>
+    </div>
+  </noscript>
+
+</body>
+</html>
