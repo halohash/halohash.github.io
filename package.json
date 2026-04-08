@@ -1,0 +1,9 @@
+{
+  "name": "halohash",
+  "version": "1.0.0",
+  "description": "HaloHash",
+  "private": false,
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
