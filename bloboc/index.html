@@ -1,0 +1,131 @@
+---
+layout: none
+title: "Fused Blob OC Generator"
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fused Blob OC Generator</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #eee;
+    text-align: center;
+    padding: 20px;
+  }
+  .controls {
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    margin: 10px 0;
+  }
+  input, button {
+    margin: 5px;
+    padding: 5px;
+  }
+  svg {
+    background: #222;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Fused Blob OC Generator</h1>
+    <br><div>Made 4 fun!</div>
+
+<div class="controls">
+  <label>Blob Color 1: <input type="color" id="color1" value="#9966ff"></label>
+  <label>Blob Color 2: <input type="color" id="color2" value="#76ff66"></label>
+  <label>Left Face Text: <input type="text" id="faceText1" value=":)"></label>
+  <label>Right Face Text: <input type="text" id="faceText2" value=":)"></label>
+  
+  <button onclick="downloadSVG()">Download SVG</button>
+  <button onclick="copySVG()">Copy SVG</button>
+</div>
+
+<div id="preview"></div>
+
+<script>
+function generateSVG() {
+  const color1 = document.getElementById("color1").value;
+  const color2 = document.getElementById("color2").value;
+  const faceText1 = document.getElementById("faceText1").value;
+  const faceText2 = document.getElementById("faceText2").value;
+
+  // === Face logic ===
+  function makeFace(text, cx, cy) {
+    const isLong = text.length > 2;
+
+    const fontSize = isLong
+      ? Math.max(16, 60 - text.length * 6)
+      : 40;
+
+    const rotation = isLong ? 0 : 90;
+
+    return `
+      <text x="${cx}" y="${cy}"
+            font-size="${fontSize}"
+            fill="black"
+            text-anchor="middle"
+            dominant-baseline="middle"
+            transform="rotate(${rotation} ${cx} ${cy})">
+        ${text}
+      </text>
+    `;
+  }
+
+  const text1 = makeFace(faceText1, 170, 170);
+  const text2 = makeFace(faceText2, 323, 170);
+
+  const svg = `
+<svg viewBox="117 130 260 100"
+     xmlns="http://www.w3.org/2000/svg">
+
+<path d="M238.38107,186.69547c-0.51612,0.41317 -1.92341,1.29327 -3.28513,-0.04015c0.29971,-0.09476 0.58948,-0.18767 0.86881,-0.27858c0,0 5.46778,-7.18712 6.59745,-8.13428c0.32072,-0.26891 -12.87213,-3.06632 -12.87213,-3.06632l10.71982,-3.54279c0,0 -1.59748,-2.55545 -3.63376,-3.33306c-1.69528,-0.64738 -6.10609,-1.22947 -8.18375,-1.47776c-0.06585,-0.12905 -0.12024,-0.26496 -0.16212,-0.40628c1.53109,-0.45686 4.55229,-1.39015 6.35124,-2.15717c3.3826,-1.44224 11.14408,-5.42866 11.14408,-5.42866c0,0 -2.01058,-0.39486 -4.54842,-0.88415c9.26661,-4.33665 18.8832,-2.72421 28.65189,-6.34058c8.59862,-3.18321 17.00731,-7.65279 25.5048,-11.21239c10.88619,-2.37615 27.87366,-7.9889 38.42469,-8.28926c8.68915,-0.24736 26.79126,8.21896 30.84718,15.4417c2.08626,20.18159 9.7791,51.51883 -12.30931,63.98932c-13.27216,6.14546 -49.79618,-7.02324 -64.21453,-10.68743c-8.19023,-2.26393 -14.2579,-5.3551 -21.61622,-9.08367c-7.36654,-3.73272 -19.90261,-4.12594 -28.28459,-5.06851z"
+fill="${color1}"/>
+
+<path d="M215.15334,192.17857c-8.59862,3.18321 -17.00731,7.65279 -25.5048,11.21239c-10.88619,2.37615 -27.87366,7.9889 -38.42469,8.28926c-8.68915,0.24736 -26.79126,-8.21896 -30.84718,-15.4417c-2.08626,-20.18159 -9.7791,-51.51883 12.30931,-63.98932c13.27216,-6.14546 49.79618,7.02324 64.21453,10.68743c8.19023,2.26393 14.2579,5.3551 21.61622,9.08367c6.62539,3.35717 17.43241,4.01301 25.63799,4.79673c-0.92919,0.32482 -1.85511,0.69756 -2.77756,1.12925c2.53784,0.48929 4.54842,0.88415 4.54842,0.88415c0,0 -7.76148,3.98642 -11.14408,5.42866c-1.79896,0.76702 -4.82015,1.7003 -6.35124,2.15717c0.04188,0.14132 0.09627,0.27723 0.16212,0.40628c2.07766,0.24828 6.48846,0.83038 8.18375,1.47776c2.03628,0.77761 3.63376,3.33306 3.63376,3.33306l-10.71982,3.54279c0,0 13.19285,2.79741 12.87213,3.06632c-1.12966,0.94716 -6.59745,8.13428 -6.59745,8.13428c-0.27933,0.09091 -0.5691,0.18382 -0.86881,0.27858c1.36172,1.33341 2.76901,0.45331 3.28513,0.04015c0.84332,0.09483 1.72869,0.1841 2.64661,0.27177c-8.40514,2.93819 -17.07807,1.95495 -25.87434,5.21132z"
+fill="${color2}"/>
+
+${text1}
+${text2}
+
+</svg>
+`;
+
+  document.getElementById("preview").innerHTML = svg;
+  return svg;
+}
+
+function downloadSVG() {
+  const svg = generateSVG();
+  const blob = new Blob([svg], {type: "image/svg+xml"});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "blob.svg";
+  a.click();
+}
+
+function copySVG() {
+  const svg = generateSVG();
+  navigator.clipboard.writeText(svg);
+  alert("SVG copied!");
+}
+
+// auto update
+document.querySelectorAll("input").forEach(input => {
+  input.addEventListener("input", generateSVG);
+});
+
+// initial render
+generateSVG();
+</script>
+
+</body>
+</html>
