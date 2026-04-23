@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PatchIt</title>
+  <style>
+    body { font-family: Arial; margin: 20px; max-width: 700px; }
+    input, button { margin: 10px 0; display: block; width: 100%; padding: 8px; }
+    textarea { width: 100%; height: 150px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<h2>PatchIt</h2>
+
+<h3>Option 1: Upload File</h3>
+<input type="file" id="fileInput">
+
+<h3>Option 2: Load from URL</h3>
+<input type="text" id="urlInput" placeholder="https://example.com/file.txt">
+<button onclick="loadFromURL()">Load URL</button>
+
+<label>Loaded Content:</label>
+<textarea id="content"></textarea>
+
+<label>Find (exact text):</label>
+<input type="text" id="findText">
+
+<label>Replace with:</label>
+<input type="text" id="replaceText">
+
+<button onclick="patchAndDownload()">Patch & Download</button>
+
+<p id="status"></p>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const contentBox = document.getElementById("content");
+const status = document.getElementById("status");
+
+// Load from file
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    contentBox.value = e.target.result;
+    status.textContent = "File loaded.";
+  };
+  reader.readAsText(file);
+});
+
+// Load from URL
+async function loadFromURL() {
+  const url = document.getElementById("urlInput").value;
+  if (!url) {
+    alert("Enter a URL.");
+    return;
+  }
+
+  status.textContent = "Loading...";
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("HTTP error " + response.status);
+
+    const text = await response.text();
+    contentBox.value = text;
+    status.textContent = "URL content loaded.";
+  } catch (err) {
+    status.textContent = "Failed to load URL (CORS or network issue).";
+  }
+}
+
+// Patch + download
+function patchAndDownload() {
+  const find = document.getElementById("findText").value;
+  const replace = document.getElementById("replaceText").value;
+
+  if (!find) {
+    alert("Enter text to find.");
+    return;
+  }
+
+  const content = contentBox.value;
+
+  const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(escaped, 'g');
+
+  const patched = content.replace(regex, replace);
+
+  const blob = new Blob([patched], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "patched.txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+
+  URL.revokeObjectURL(url);
+
+  status.textContent = "Patched file downloaded.";
+}
+</script>
+
+</body>
+</html>
