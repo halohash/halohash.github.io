@@ -25,33 +25,47 @@ body {
 <script src="/lib/v86.js"></script>
 
 <script>
-window.onload = function() {
-    var emulator = window.emulator = new V86({
+function getVMImage() {
+    const params = new URLSearchParams(location.search);
+    const vm = params.get("vm");
+
+    const vmMap = {
+        "vm1": "https://file.garden/aUYIWVAKvQxCBY-_/vms/windows30-hda.img",
+        "vm2": "https://file.garden/aUYIWVAKvQxCBY-_/vms/goatsexosfloppy.img"
+    };
+
+    return vmMap[vm] || vmMap["vm1"]; // default
+}
+
+window.onload = function () {
+    const emulator = window.emulator = new V86({
         memory_size: 32 * 1024 * 1024,
         vga_memory_size: 2 * 1024 * 1024,
         screen_container: document.getElementById("screen_container"),
         bios: { url: "seabios.bin" },
         vga_bios: { url: "vgabios.bin" },
-        hda: { url: "https://file.garden/aUYIWVAKvQxCBY-_/vms/windows30-hda.img" },
+        hda: { url: getVMImage() },
         autostart: true,
     });
-    setTimeout(emulator.add_listener("vm-failure",function() {emulator.restart()}),1);
+
+    emulator.add_listener("vm-failure", function () {
+        emulator.restart();
+    });
+
+    setTimeout(() => {
+        const canvas = document.querySelector("#screen_container canvas");
+        if (!canvas) return;
+
+        canvas.style.display = "block";
+
+        canvas.addEventListener("click", async () => {
+            if (!document.pointerLockElement) {
+                await canvas.requestPointerLock();
+            }
+        });
+
+        canvas.tabIndex = 1;
+        canvas.focus();
+    }, 500);
 };
-</script>
-
-<div id="screen_container">
-    <div style="white-space: pre;font-family: Liberation Mono, DejaVu Sans Mono, Courier New, monospace;font-size: 14px;line-height: 17px;display: block;"></div>
-    <canvas style="display:none"></canvas>
-</div>
-
-<script async>
-  // Assuming your canvas has id="v86-canvas"
-const canvas = document.getElementById("screen_container");
-
-canvas.addEventListener("click", async () => {
-    if (!document.pointerLockElement) {
-        await canvas.requestPointerLock();
-    }
-});
-
 </script>
