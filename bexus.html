@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Webpage to VDO.Ninja</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  body { margin:0; background:#000; }
+  #target {
+    width:1280px;
+    height:720px;
+    overflow:hidden;
+  }
+</style>
+</head>
+<body>
+
+<div id="target"></div>
+<canvas id="canvas" width="1280" height="720" style="display:none;"></canvas>
+
+<script>
+const ROOM = "CollabVideoV2"; // change this
+const TARGET_URL = "https://tv36.pages.dev"; // page to broadcast
+
+const target = document.getElementById("target");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+// Load webpage into a sandboxed iframe-like container
+fetch(TARGET_URL)
+  .then(res => res.text())
+  .then(html => {
+    target.innerHTML = html;
+    startCapture();
+  });
+
+async function startCapture() {
+  // capture canvas stream
+  const stream = canvas.captureStream(30);
+
+  // connect to VDO.Ninja
+  const pc = new RTCPeerConnection();
+
+  stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  // send offer to VDO.Ninja signaling
+  fetch(`https://vdo.ninja/?room=${ROOM}&push=${ROOM}&view=${ROOM}`, {
+    method: "POST",
+    body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
+  });
+
+  // render loop
+  setInterval(async () => {
+    const screenshot = await html2canvas(target);
+    ctx.drawImage(screenshot, 0, 0, canvas.width, canvas.height);
+  }, 1000 / 15);
+}
+</script>
+
+</body>
+</html>
