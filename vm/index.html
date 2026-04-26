@@ -36,6 +36,17 @@ function getVMImage() {
 
     return vmMap[vm] || vmMap["vm1"]; // default
 }
+function getFloppyImage() {
+    const params = new URLSearchParams(location.search);
+    const vm = params.get("vm");
+
+    const vmMap = {
+        "vm1": "https://file.garden/aUYIWVAKvQxCBY-_/vms/windows30-hda.img",
+        "vm2": "https://file.garden/aUYIWVAKvQxCBY-_/vms/goatsexosfloppy.img"
+    };
+
+    return vmMap[vm] || vmMap["vm1"]; // default
+}
 
 window.onload = function () {
     const emulator = window.emulator = new V86({
@@ -44,7 +55,7 @@ window.onload = function () {
         screen_container: document.getElementById("screen_container"),
         bios: { url: "seabios.bin" },
         vga_bios: { url: "vgabios.bin" },
-        hda: { url: getVMImage() },
+        hda: { url: getVMImage() + "?cb=" + Math.random() },
         autostart: true,
     });
 
