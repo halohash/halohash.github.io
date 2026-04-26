@@ -1,0 +1,60 @@
+
+<!doctype html>
+<title>CMDVM</title>
+
+<style>
+@font-face {
+  font-family: "KOM";
+  src: url("https://file.garden/aUYIWVAKvQxCBY-_/fonts/brandon/Brandon-Grotesque-Black.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+  body {
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    background-size: 100% 100%;
+  }
+
+  #screen_container {
+    background-color: black;
+    width: 640px;
+    height: 400px;
+  }
+</style>
+
+<script type="module"></script>
+<script src="/lib/v86.js"></script>
+
+<script>
+window.onload = function() {
+    var emulator = window.emulator = new V86({
+        memory_size: 32 * 1024 * 1024,
+        vga_memory_size: 2 * 1024 * 1024,
+        screen_container: document.getElementById("screen_container"),
+        bios: { url: "seabios.bin" },
+        vga_bios: { url: "vgabios.bin" },
+        fda: { url: "https://file.garden/aUYIWVAKvQxCBY-_/vms/goatsexosfloppy.img" },
+        autostart: true,
+    });
+    setTimeout(emulator.add_listener("vm-failure",function() {emulator.restart()}),1);
+};
+</script>
+
+<div id="screen_container">
+    <div style="white-space: pre;font-family: Liberation Mono, DejaVu Sans Mono, Courier New, monospace;font-size: 14px;line-height: 17px;display: block;"></div>
+    <canvas style="display:none"></canvas>
+</div>
+
+<script async>
+  // Assuming your canvas has id="v86-canvas"
+const canvas = document.getElementById("screen_container");
+
+canvas.addEventListener("click", async () => {
+    if (!document.pointerLockElement) {
+        await canvas.requestPointerLock();
+    }
+});
+
+</script>
