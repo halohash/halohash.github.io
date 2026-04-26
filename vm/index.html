@@ -31,7 +31,7 @@ window.onload = function() {
         screen_container: document.getElementById("screen_container"),
         bios: { url: "seabios.bin" },
         vga_bios: { url: "vgabios.bin" },
-        fda: { url: "https://file.garden/aUYIWVAKvQxCBY-_/vms/goatsexosfloppy.img" },
+        hda: { url: "https://file.garden/aUYIWVAKvQxCBY-_/vms/windows30-hda.img" },
         autostart: true,
     });
     setTimeout(emulator.add_listener("vm-failure",function() {emulator.restart()}),1);
