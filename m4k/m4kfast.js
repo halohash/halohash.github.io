@@ -669,17 +669,35 @@ function systemClockCycle() {
 			var ay = n35;
 			var az = n36;
 			var blockData = getBlock(ax, ay, az);
-			if (ax < 0 || ay < 0 || az < 0 || ax >= 64 || ay >= 64 || az >= 64 || blockData > 0 || (Shift == 1 && n29 === 1)) { // Is there a collision?
-				if (n29 === 1) {
-					if (Jump > 0 && n10 > 0) { // if player is not in air, make player jump
-						n10 = -0.23;
-					} else {
-						n10 = 0;
-					}
-				}
-				++n29;
-				continue MovePlayer; //Immediately stop and go back to top of the loop (if n29 < 3)
-			}
+var FlyMode = (new URLSearchParams(location.search).get("fly") || "false") === "true";
+// movement / collision block
+if (!FlyMode && (ax < 0 || ay < 0 || az < 0 || ax >= 64 || ay >= 64 || az >= 64 || blockData > 0 || (Shift == 1 && n29 === 1))) { // collision
+    if (n29 === 1) {
+        if (Jump > 0 && n10 > 0) {
+            n10 = -0.23; // normal jump
+        } else {
+            n10 = 0;
+        }
+    }
+    ++n29;
+    continue MovePlayer;
+}
+
+
+// ===== FLY MODE =====
+if (FlyMode) {
+    // vertical control
+    if (Jump > 0) {
+        n10 = -0.2; // up
+    } else if (Shift == 1) {
+        n10 = 0.2; // down
+    } else {
+        n10 = 0;
+    }
+
+    // OPTIONAL: remove gravity influence completely
+    // (only do this if gravity is applied elsewhere)
+}
 		}
 		cameraPos[0] = -n30+1;
 		cameraPos[1] = -n31;
