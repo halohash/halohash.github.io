@@ -5,8 +5,8 @@ var gl = output.getContext("webgl", {
 	antialias: false
 });
 
-var cameraPos = [11.85, -67.2, -61.12];//[-9.343005478673618, -38.099999999999994, -7.376547961840774];
-var cameraRot = [1.08, -0.68];//[5.480000000000004, -0.5972036732051049];
+var cameraPos = [-32.5,-19.40000000000001,49.90000000000013]//[-9.343005478673618, -38.099999999999994, -7.376547961840774];
+var cameraRot = [3.141592653589793,-0.016];//[5.480000000000004, -0.5972036732051049];
 var selectX = 0;
 var selectY = 0;
 var selectZ = 0;
@@ -218,8 +218,11 @@ function begin() {
 			uSampler: gl.getUniformLocation(shaderProgram, "uSampler")
 		}
 	};
-
-	var texture = loadTexture(gl, "./texture_map.png");
+    if (new URL(location.href).searchParams.get("texture") !== null) {
+		var texturecus = new URL(location.href).searchParams.get("texture")
+	} else {
+		var texturecus = "./texture_map.png" }
+	var texture = loadTexture(gl, texturecus);
 	var whiteTexture = makeWhiteTexture();
 
 	glInitFunc(programInfo, texture, whiteTexture);

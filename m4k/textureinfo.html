@@ -6,9 +6,9 @@
 		<link rel="shortcut icon" type="image/png" href="./favicon.png"/>
 		<canvas id="output" width="854" height="480"></canvas>
 		<style>
-			/*#output {
+			#output {
 				border: solid 1px;
-			}*/
+			}
 			html, body {
 				margin: 0px;
 				padding: 0px;
@@ -43,9 +43,14 @@
 		</style>
 	</head>
 	<body>
-		<span id="blockName" style="display: none;">block</span>
-		<span id="fpsCount">FPS: --</span>
-		<span id="disconMsg" style="display: none;">Disconnected. Please wait.</span>
-		<script src="./m4kfast.js"></script>
+		<h1>Custom Texture Info</h1>
+		<br>
+		<ul>
+			<li>Your site needs the correct CORS response. like this: <code>Access-Control-Allow-Origin: *</code></li>
+			<li>Your site needs to be unblocked by your isp or admin</li>
+			<li>Your image needs to be <b>EXACTLY 256x256</b> (width=256, height=256)</li>
+			<li>You need the image to be hosted on an image sharing site (like dro.pm, file.garden, or [githubusername].github.io</li>
+			<li>GIFs might be unsupported due to CPU or GPU usage.</li>
+		</ul>
 	</body>
 </html>
