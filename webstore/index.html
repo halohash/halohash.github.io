@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Chrome Web Store</title>
+    <link rel="stylesheet" href="./fonts/open-sans/font.css" />
+    <link rel="shortcut icon" href="./images/favicon.svg" type="image/x-icon" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="main">
+      <div id="sidebar">
+        <a id="sidebar-header" href="/">
+          <img id="sidebar-header-icon" src="./images/icon.svg" />
+          <span id="sidebar-header-text">chrome web store</span>
+        </a>
+        <form id="sidebar-search-container">
+          <input id="sidebar-search" type="text" name="q" value="" maxlength="300" placeholder="Search the store" />
+          <button id="sidebar-search-clear" type="reset" form="sidebar-search-container"></button>
+        </form>
+        <div id="sidebar-items">
+          <a class="sidebar-item" data-slug="extension" href="javascript:void(0)">Extensions</a>
+          <a class="sidebar-item" data-slug="statictheme" href="javascript:void(0)">Themes</a>
+        </div>
+        <div class="sidebar-separator"></div>
+      </div>
+      <div id="content">
+        <div id="content-header">
+          <!--<div id="settings-button"></div>-->
+        </div>
+        <div id="content-items"></div>
+      </div>
+    </div>
+    <script type="module" src="./modules/main.mjs"></script>
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"40876fbe30784d909f2d3ef08a529852","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

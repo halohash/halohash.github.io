@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>roktube</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: #fff; }
+        canvas { border: 2px solid #555; background: #000; }
+        .stats { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- Target elements required by brs-engine -->
+    <canvas id="display" width="854" height="480"></canvas>
+    <video id="player" style="display: none" crossorigin="anonymous"></video>
+    <div class="stats" id="stats">Ready...</div>
+
+    <script type="text/javascript" src="roktube/brs.api.js"></script>
+    <script>
+        async function runBpkApp() {
+            // 1. Initialize the BRS engine
+            await brs.initialize({}, { 
+                debugToConsole: true, 
+                disableKeys: false 
+            });
+
+            // 2. Fetch or define the path to your .bpk package
+            const bpkFilePath = 'roktube/app.zip';
+
+            try {
+                // 3. Execute the .bpk file
+                document.getElementById('stats').innerText = 'Running BPK file...';
+                await brs.execute(bpkFilePath);
+            } catch (error) {
+                console.error('Error executing BPK:', error);
+                document.getElementById('stats').innerText = 'Execution Failed';
+            }
+        }
+
+        // Initialize and execute once the page is loaded
+        window.onload = runBpkApp;
+    </script>
+</body>
+</html>
