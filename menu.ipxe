@@ -1,0 +1,19 @@
+#!ipxe
+
+menu HashIt Live CD
+item --gap Android
+item donut Android 1.6 R2 (Donut)
+item donut Damn Small Linux 1.2
+item --gap More Coming Soon, Stay Tuned!
+
+choose target && goto ${target}
+
+:donut
+kernel https://boot.ipxe.org/memdisk iso raw
+initrd https://archive.org/download/sjarb_android_1.6r2/android-x86-1.6-r2.iso
+boot
+
+:squid
+kernel https://boot.ipxe.org/memdisk iso raw
+initrd https://archive.org/download/dsl-1.2/dsl-1.2.iso
+boot
