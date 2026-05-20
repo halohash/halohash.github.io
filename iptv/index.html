@@ -1,0 +1,12 @@
+---
+layout: null
+permalink: /live.m3u8
+---
+
+#EXTM3U x-tvg-url="{{ site.data.settings.epg_url }}"
+
+{% for channel in site.data.channels %}
+#EXTINF:-1 tvg-id="{{ channel.id }}" tvg-name="{{ channel.name }}" tvg-logo="{{ channel.logo }}" group-title="{{ channel.group }}",{{ channel.name }}
+{{ channel.url }}
+
+{% endfor %}

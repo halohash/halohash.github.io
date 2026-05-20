@@ -1,0 +1,11 @@
+- id: info
+  name: Customer Information
+  logo: https://static.wikia.nocookie.net/663e53f7-1e79-4906-95a7-2c1df4ebbada/thumbnail/width/200/height/200
+  group: Other
+  url: https://live20.bozztv.com/akamaissh101/ssh101/simptestnews/playlist.m3u8
+
+- id: gorink
+  name: Gorink
+  logo: https://static.wikia.nocookie.net/663e53f7-1e79-4906-95a7-2c1df4ebbada/thumbnail/width/200/height/200
+  group: Music
+  url: https://live20.bozztv.com/akamaissh101/ssh101/simplat/playlist.m3u8
