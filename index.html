@@ -88,7 +88,7 @@ window.addEventListener("load", async () => {
     if (response.ok) {
         let data = await response.json();
 
-        for (let b of data.slice(0, 5)) {
+        for (let b of data) {
             addTile(
                 rows[0].tiles,
                 b.title,
