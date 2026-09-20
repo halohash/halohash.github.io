@@ -1756,19 +1756,17 @@ setBg(
 );
 */
 window.addEventListener("load", async () => {
-    setBg("image", "/googlenow.jpg");
+    setBg("image", "https://file.garden/aUYIWVAKvQxCBY-_/database/images/752ad3bd.png");
 
-    // Popular on YouTube
-    window.ytpopular = addRow("Popular on YouTube");
-
+    addRow("Popular on YouTube");
     let response = await fetch("https://inv.truehosting.net/api/v1/popular");
-
+setTimeout((function(){addRow("Home");}),500);
     if (response.ok) {
         let data = await response.json();
 
         for (let b of data.slice(0, 5)) {
             addTile(
-                ytpopular.tiles,
+                rows[0].tiles.tiles,
                 b.title,
                 "",
                 "site",
@@ -1782,7 +1780,7 @@ window.addEventListener("load", async () => {
     }
 
     // Home / Onfleek
-    window.onfleek = addRow("Home");
+    window.onfleek = rows[1]
 
     let onfleekresponse = await fetch("/onfleek");
 
