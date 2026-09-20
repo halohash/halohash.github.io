@@ -1766,7 +1766,7 @@ setTimeout((function(){addRow("Home");}),500);
 
         for (let b of data.slice(0, 5)) {
             addTile(
-                rows[0].tiles.tiles,
+                rows[0].tiles,
                 b.title,
                 "",
                 "site",
@@ -1782,7 +1782,7 @@ setTimeout((function(){addRow("Home");}),500);
     // Home / Onfleek
     window.onfleek = rows[1]
 
-    let onfleekresponse = await fetch("/onfleek");
+    let onfleekresponse = await fetch("/api/onfleek.json");
 
     if (onfleekresponse.ok) {
         let onfleekdata = await onfleekresponse.json();
