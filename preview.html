@@ -1758,42 +1758,50 @@ setBg(
 window.addEventListener("load", async () => {
     setBg("image", "/googlenow.jpg");
 
+    // Popular on YouTube
     window.ytpopular = addRow("Popular on YouTube");
 
     let response = await fetch("https://inv.truehosting.net/api/v1/popular");
-    let data = await response.json();
 
-    for (let b of data.slice(0, 5)) {
-        addTile(
-            ytpopular.tiles,
-            b.title,
-            "",
-            "site",
-            "",
-            "",
-            "https://youtu.be/" + b.videoId,
-            b.videoThumbnails[0].url,
-            "16:9"
-        );
+    if (response.ok) {
+        let data = await response.json();
+
+        for (let b of data.slice(0, 5)) {
+            addTile(
+                ytpopular.tiles,
+                b.title,
+                "",
+                "site",
+                "",
+                "",
+                "https://youtu.be/" + b.videoId,
+                b.videoThumbnails[0].url,
+                "16:9"
+            );
+        }
     }
-window.onfleek = addRow("Home");
-let onfleekresponse = await fetch("/onfleek");
-    let onfleekdata = await response.json();
+
+    // Home / Onfleek
+    window.onfleek = addRow("Home");
+
+    let onfleekresponse = await fetch("/onfleek");
 
     if (onfleekresponse.ok) {
-      for (let b of data.slice(0, 5)) {
-        addTile(
-            onfleek.tiles,
-            b.title,
-            "",
-            "site",
-            "",
-            "",
-            b.siteurl,
-            b.imgurl,
-            "16:9"
-        );
-    }
+        let onfleekdata = await onfleekresponse.json();
+
+        for (let b of onfleekdata.slice(0, 5)) {
+            addTile(
+                onfleek.tiles,
+                b.title,
+                "",
+                "site",
+                "",
+                "",
+                b.siteurl,
+                b.imgurl,
+                "16:9"
+            );
+        }
     }
 });
 
