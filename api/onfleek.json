@@ -2,11 +2,16 @@
   {
     "title": "Live TV",
     "siteurl": "/livetv.html",
-    "imgurl": "/patch.jpg"
+    "imgurl": "https://i.ytimg.com/vi/UKY3scPIMd8/mqdefault.jpg"
   },
   {
     "title": "DirecTV",
     "siteurl": "https://youtube.com/directv",
     "imgurl": "https://yt3.googleusercontent.com/IomV6e-X8XTPBTEcvZjiOKiZ56ZC5gMRZwrAFsQCns9z0FIVr1A0Mvb_fLWXtXeZ0DMGv-FyE7I=w1080"
+  },
+  {
+    "title": "Coalesce City",
+    "siteurl": "https://thedust.pages.dev/coalesce/",
+    "imgurl": "/apps/coalesce.png"
   }
 ]
