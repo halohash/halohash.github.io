@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YT14 BROWSE GENERATOR</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 30px;
+      font-family: Arial, sans-serif;
+      background: #0f1115;
+      color: #eee;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 6px;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-weight: bold;
+      background: #3b82f6;
+      color: white;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+
+    .danger {
+      background: #dc2626;
+    }
+
+    .danger:hover {
+      background: #b91c1c;
+    }
+
+    .copy {
+      background: #16a34a;
+    }
+
+    .video {
+      background: #181b22;
+      border: 1px solid #30343d;
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 15px;
+    }
+
+    .video-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .video-header h3 {
+      margin: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 13px;
+      color: #aaa;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #3a3f48;
+      border-radius: 6px;
+      background: #0d0f13;
+      color: white;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #3b82f6;
+    }
+
+    .output {
+      margin-top: 25px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 500px;
+      resize: vertical;
+      padding: 15px;
+      border: 1px solid #30343d;
+      border-radius: 8px;
+      background: #08090c;
+      color: #a7f3d0;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 700px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      body {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>YT14 BROWSE GENERATOR</h1>
+
+  <div class="toolbar">
+    <button onclick="addVideo()">+ Add Video</button>
+    <button onclick="generateJSON()">Generate JSON</button>
+    <button class="copy" onclick="copyJSON()">Copy JSON</button>
+  </div>
+
+  <div id="videos"></div>
+
+  <div class="output">
+    <h2>Generated JSON</h2>
+    <textarea id="output" readonly></textarea>
+  </div>
+
+</div>
+
+<script>
+  const videosContainer = document.getElementById("videos");
+  const output = document.getElementById("output");
+
+  let videoCount = 0;
+
+  function addVideo(data = {}) {
+    videoCount++;
+
+    const video = document.createElement("div");
+    video.className = "video";
+    video.dataset.id = videoCount;
+
+    video.innerHTML = `
+      <div class="video-header">
+        <h3>Video ${videoCount}</h3>
+        <button class="danger" onclick="removeVideo(this)">
+          Remove
+        </button>
+      </div>
+
+      <div class="grid">
+
+        <label>
+          Video ID
+          <input
+            class="videoId"
+            value="${escapeHTML(data.videoId || "")}"
+            placeholder="PLACEHOLDER"
+          >
+        </label>
+
+        <label>
+          Title
+          <input
+            class="title"
+            value="${escapeHTML(data.title || "")}"
+            placeholder="video 1"
+          >
+        </label>
+
+        <label>
+          Thumbnail URL
+          <input
+            class="thumbnailUrl"
+            value="${escapeHTML(data.thumbnailUrl || "")}"
+            placeholder="https://i.ytimg.com/vi/.../hqdefault.jpg"
+          >
+        </label>
+
+        <label>
+          Thumbnail Width
+          <input
+            type="number"
+            class="thumbnailWidth"
+            value="${data.thumbnailWidth || 480}"
+          >
+        </label>
+
+        <label>
+          Thumbnail Height
+          <input
+            type="number"
+            class="thumbnailHeight"
+            value="${data.thumbnailHeight || 360}"
+          >
+        </label>
+
+        <label>
+          Channel / Byline
+          <input
+            class="byline"
+            value="${escapeHTML(data.byline || "Unknown")}"
+            placeholder="Unknown"
+          >
+        </label>
+
+        <label>
+          Published Time
+          <input
+            class="publishedTime"
+            value="${escapeHTML(data.publishedTime || "")}"
+            placeholder="12 Dozen Donuts ago"
+          >
+        </label>
+
+        <label>
+          View Count
+          <input
+            class="viewCount"
+            value="${escapeHTML(data.viewCount || "0 views")}"
+            placeholder="1,234 views"
+          >
+        </label>
+
+      </div>
+    `;
+
+    videosContainer.appendChild(video);
+
+    generateJSON();
+  }
+
+  function removeVideo(button) {
+    button.closest(".video").remove();
+
+    renumberVideos();
+    generateJSON();
+  }
+
+  function renumberVideos() {
+    const videos = document.querySelectorAll(".video");
+
+    videos.forEach((video, index) => {
+      video.querySelector("h3").textContent = `Video ${index + 1}`;
+    });
+  }
+
+  function getValue(parent, selector) {
+    return parent.querySelector(selector).value;
+  }
+
+  function generateJSON() {
+    const videos = [];
+
+    document.querySelectorAll(".video").forEach(video => {
+
+      const videoObject = {
+        videoRenderer: {
+          videoId: getValue(video, ".videoId"),
+
+          thumbnail: {
+            thumbnails: [
+              {
+                url: getValue(video, ".thumbnailUrl"),
+                width: Number(getValue(video, ".thumbnailWidth")),
+                height: Number(getValue(video, ".thumbnailHeight"))
+              }
+            ]
+          },
+
+          shortBylineText: {
+            runs: [
+              {
+                text: getValue(video, ".byline")
+              }
+            ]
+          },
+
+          publishedTimeText: getValue(video, ".publishedTime"),
+
+          viewCountText: getValue(video, ".viewCount"),
+
+          title: {
+            runs: [
+              {
+                text: getValue(video, ".title")
+              }
+            ]
+          }
+        }
+      };
+
+      videos.push(videoObject);
+    });
+
+    const result = {
+      contents: {
+        sectionListRenderer: {
+          contents: [
+            {
+              itemSectionRenderer: {
+                contents: videos
+              }
+            }
+          ]
+        }
+      }
+    };
+
+    output.value = JSON.stringify(result, null, 2);
+  }
+
+  async function copyJSON() {
+    generateJSON();
+
+    try {
+      await navigator.clipboard.writeText(output.value);
+
+      const button = document.querySelector(".copy");
+      const original = button.textContent;
+
+      button.textContent = "Copied!";
+
+      setTimeout(() => {
+        button.textContent = original;
+      }, 1500);
+
+    } catch (error) {
+      output.select();
+      document.execCommand("copy");
+      alert("JSON copied!");
+    }
+  }
+
+  function escapeHTML(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // Start with two example videos
+  addVideo({
+    videoId: "PLACEHOLDER",
+    title: "video 1",
+    thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    thumbnailWidth: 480,
+    thumbnailHeight: 360,
+    byline: "Unknown",
+    publishedTime: "12 Dozen Donuts ago",
+    viewCount: "1,234 views"
+  });
+
+  addVideo({
+    videoId: "PLACEHOxDE2",
+    title: "video 2",
+    thumbnailUrl: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hq1.jpg",
+    thumbnailWidth: 480,
+    thumbnailHeight: 360,
+    byline: "Unknown",
+    publishedTime: "15 Dozen Donuts ago",
+    viewCount: "0 views"
+  });
+</script>
+
+</body>
+</html>
