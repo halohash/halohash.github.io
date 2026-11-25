@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en" data-lw-slug="noise-field">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Noise Field</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;touch-action:none;}
+canvas{display:block;width:100%;height:100%;background:#000;}
+</style>
+<!--lw:head-->
+<script src="/wallpapers/runtime.js?v=4b6e379c"></script>
+<script src="/wallpapers/wgpu-bridge.js?v=c16cfb9c"></script>
+<style id="lw-hide-ui">
+/* LW shell: the wallpaper ships without its own chrome. */
+#ui, #hud, #hud-panel, #hud-toggle, #hint, #hint-banner, #diag-banner, #dbg,
+#err, #msg, #error-overlay, #error-message,
+#loading-overlay, .top-bar, .bottom-dock, .hud-panel, #file { display: none !important; }
+#hud-panel { pointer-events: none !important; }
+html, body { background: #000; }
+</style>
+<!--/lw:head-->
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(async function(){
+var DOT_SRC="noisefielddot.avif";
+var canvas=document.getElementById("c");
+
+// ---- shared data ----
+var bgMeshRaw=[-1.5,1.0,0.08,0.335,0.406,-1.5,-0.2,0.137,0.176,0.225,-1.05,0.3,0.0,0.088,0.135,-1.5,1.0,0.08,0.335,0.406,-1.05,0.3,0.0,0.088,0.135,-0.6,0.4,0.0,0.184,0.233,-1.5,1.0,0.08,0.335,0.406,-0.6,0.4,0.0,0.184,0.233,0.0,1.0,0.133,0.404,0.478,0.0,1.0,0.133,0.404,0.478,-0.6,0.4,0.0,0.184,0.233,0.3,0.4,0.0,0.124,0.178,0.0,1.0,0.133,0.404,0.478,0.3,0.4,0.0,0.124,0.178,1.5,1.0,0.002,0.173,0.231,1.5,1.0,0.002,0.173,0.231,0.3,0.4,0.0,0.124,0.178,1.5,-1.0,0.0,0.088,0.135,0.3,0.4,0.0,0.124,0.178,-0.6,0.4,0.0,0.184,0.233,0.0,0.2,0.0,0.088,0.135,0.3,0.4,0.0,0.124,0.178,0.0,0.2,0.0,0.088,0.135,1.5,-1.0,0.0,0.088,0.135,0.0,0.2,0.0,0.088,0.135,-0.6,0.4,0.0,0.184,0.233,-0.6,0.1,0.002,0.196,0.233,-0.6,0.1,0.002,0.196,0.233,-0.6,0.4,0.0,0.184,0.233,-1.05,0.3,0.0,0.088,0.135,-1.05,0.3,0.0,0.088,0.135,-1.5,-0.2,0.137,0.176,0.225,-0.6,0.1,0.002,0.196,0.233,-0.45,-0.3,0.002,0.059,0.09,-0.6,0.1,0.002,0.196,0.233,-1.5,-0.2,0.137,0.176,0.225,-0.45,-0.3,0.002,0.059,0.09,-1.5,-0.2,0.137,0.176,0.225,-1.5,-1.0,0.204,0.212,0.218,1.5,-1.0,0.0,0.088,0.135,-0.45,-0.3,0.002,0.059,0.09,-1.5,-1.0,0.204,0.212,0.218,0.0,0.2,0.0,0.088,0.135,-0.6,0.1,0.002,0.196,0.233,-0.45,-0.3,0.002,0.059,0.09,1.5,-1.0,0.0,0.088,0.135,0.0,0.2,0.0,0.088,0.135,-0.45,-0.3,0.002,0.059,0.09];
+var bgVertexCount=bgMeshRaw.length/5;
+var NUM_PARTICLES=83;
+
+// noise
+var B=256,BM=255,N=4096;
+var p=new Int32Array(B+B+2);
+var g2=new Float32Array((B+B+2)*2);
+function rsRandInt(n){return Math.floor(Math.random()*n);}
+function rsRandRange(a,b){return a+Math.random()*(b-a);}
+function initNoise(){
+ var i,j;
+ for(i=0;i<B;i++){
+  p[i]=i;
+  var gx=(rsRandInt(B*2)-B)/B;
+  var gy=(rsRandInt(B*2)-B)/B;
+  var s=Math.sqrt(gx*gx+gy*gy);
+  if(s===0)s=1;
+  g2[i*2]=gx/s;g2[i*2+1]=gy/s;
+ }
+ for(i=B-1;i>=0;i--){
+  j=rsRandInt(B);
+  var k=p[i];p[i]=p[j];p[j]=k;
+ }
+ for(i=0;i<B+2;i++){p[B+i]=p[i];g2[(B+i)*2]=g2[i*2];g2[(B+i)*2+1]=g2[i*2+1];}
+}
+function sCurve(t){return t*t*(3.0-2.0*t);}
+function lerp(a,b,t){return a+(b-a)*t;}
+function noise2(x,y){
+ var t=x+N;var ft=Math.floor(t);var bx0=ft&BM;var bx1=(bx0+1)&BM;var rx0=t-ft;var rx1=rx0-1.0;
+ t=y+N;ft=Math.floor(t);var by0=ft&BM;var by1=(by0+1)&BM;var ry0=t-ft;var ry1=ry0-1.0;
+ var i=p[bx0],j=p[bx1];
+ var b00=p[i+by0],b10=p[j+by0],b01=p[i+by1],b11=p[j+by1];
+ var sx=sCurve(rx0),sy=sCurve(ry0);
+ var u=rx0*g2[b00*2]+ry0*g2[b00*2+1];
+ var v=rx1*g2[b10*2]+ry0*g2[b10*2+1];
+ var a=lerp(u,v,sx);
+ u=rx0*g2[b01*2]+ry1*g2[b01*2+1];
+ v=rx1*g2[b11*2]+ry1*g2[b11*2+1];
+ var b=lerp(u,v,sx);
+ return 1.5*lerp(a,b,sy);
+}
+initNoise();
+var px=new Float32Array(NUM_PARTICLES);
+var py=new Float32Array(NUM_PARTICLES);
+var pspeed=new Float32Array(NUM_PARTICLES);
+var pwander=new Float32Array(NUM_PARTICLES);
+var palphaStart=new Float32Array(NUM_PARTICLES);
+var palpha=new Float32Array(NUM_PARTICLES);
+var plife=new Int32Array(NUM_PARTICLES);
+var pdeath=new Int32Array(NUM_PARTICLES);
+function spawn(i){
+ px[i]=rsRandRange(-1.0,1.0);
+ py[i]=rsRandRange(-1.0,1.0);
+ pspeed[i]=rsRandRange(0.0002,0.02);
+ pwander[i]=rsRandRange(0.50,1.5);
+ pdeath[i]=0;
+ plife[i]=Math.floor(rsRandRange(300,800));
+ palphaStart[i]=rsRandRange(0.01,1.0);
+ palpha[i]=palphaStart[i];
+}
+for(var i=0;i<NUM_PARTICLES;i++)spawn(i);
+var touchDown=false,touchInfluence=0,touchX=0,touchY=0;
+var halfW=1,halfH=1;
+function computeAspect(){
+ var w=canvas.width,h=canvas.height;
+ if(w>h){halfW=w/h;halfH=1.0;}else{halfH=h/w;halfW=1.0;}
+}
+function updateTouch(clientX,clientY){
+ var rect=canvas.getBoundingClientRect();
+ var nx=((clientX-rect.left)/rect.width)*2.0-1.0;
+ var ny=((clientY-rect.top)/rect.height)*2.0-1.0;
+ touchX=nx*halfW;touchY=-ny*halfH;touchInfluence=1.0;
+}
+canvas.addEventListener("pointerdown",function(e){touchDown=true;updateTouch(e.clientX,e.clientY);try{canvas.setPointerCapture(e.pointerId);}catch(err){}});
+canvas.addEventListener("pointermove",function(e){if(touchDown)updateTouch(e.clientX,e.clientY);});
+window.addEventListener("pointerup",function(){touchDown=false;});
+window.addEventListener("pointercancel",function(){touchDown=false;});
+function step(){
+ for(var i=0;i<NUM_PARTICLES;i++){
+  if(plife[i]<0||px[i]<-1.2||px[i]>1.2||py[i]<-1.7||py[i]>1.7){spawn(i);}
+  var dx=touchX-px[i],dy=touchY-py[i];
+  var touchDist=Math.sqrt(dx*dx+dy*dy);
+  var noiseval=noise2(px[i],py[i]);
+  var speed;
+  if(touchDown||touchInfluence>0.0){
+   if(touchDown)touchInfluence=1.0;
+   var rads=Math.atan2(touchX-px[i]+noiseval,touchY-py[i]+noiseval);
+   if(touchDist!==0){
+    speed=((0.25+(noiseval*pspeed[i]+0.01))/touchDist*0.3);
+    speed=speed*touchInfluence;
+   }else{speed=0.3;}
+   px[i]+=Math.cos(rads)*speed*0.2;
+   py[i]+=Math.sin(rads)*speed*0.2;
+  }
+  var angle=360.0*noiseval*pwander[i];
+  speed=noiseval*pspeed[i]+0.01;
+  var rads2=angle*Math.PI/180.0;
+  px[i]+=Math.cos(rads2)*speed*0.33;
+  py[i]+=Math.sin(rads2)*speed*0.33;
+  plife[i]--;pdeath[i]++;
+  var dist=Math.sqrt(px[i]*px[i]+py[i]*py[i]);
+  if(dist<0.95){dist=0;palphaStart[i]*=(1.0-dist);}else{dist=dist-0.95;if(palphaStart[i]<1.0){palphaStart[i]+=0.01;palphaStart[i]*=(1.0-dist);}}
+  if(pdeath[i]<101){palpha[i]=palphaStart[i]*pdeath[i]/100.0;}else if(plife[i]<101){palpha[i]=palpha[i]*plife[i]/100.0;}else{palpha[i]=palphaStart[i];}
+ }
+ if(touchInfluence>0.0)touchInfluence-=0.01;
+}
+var scaleSize=1.0;
+var maxPointSize=63.0;
+
+// ---- WebGPU first ----
+let useWebGPU=false;
+let device=null, context=null, format=null;
+if(navigator.gpu){
+ try{
+  const adapter=await navigator.gpu.requestAdapter();
+  if(adapter){
+   device=await adapter.requestDevice();
+   context=canvas.getContext("webgpu");
+   format=navigator.gpu.getPreferredCanvasFormat();
+   // need to check context exists
+   if(context){
+    context.configure({device:device, format:format, alphaMode:"opaque"});
+    useWebGPU=true;
+   }
+  }
+ }catch(e){ console.error("WebGPU unavailable",e); useWebGPU=false; }
+}
+
+if(useWebGPU){
+// ---- WGSL shaders ----
+const bgWGSL=`
+struct VsOut{ @builtin(position) pos: vec4f, @location(0) color: vec3f, }
+@vertex fn vsBg(@location(0) aPos: vec2f, @location(1) aColor: vec3f) -> VsOut {
+ var out: VsOut;
+ out.pos = vec4f(aPos, 0.0, 1.0);
+ out.color = aColor;
+ return out;
+}
+@fragment fn fsBg(@location(0) color: vec3f) -> @location(0) vec4f {
+ return vec4f(color, 1.0);
+}
+`;
+const ptWGSL=`
+struct Uniforms{
+ scale: vec2f,
+ scaleSize: f32,
+ maxPointSize: f32,
+ viewport: vec2f,
+ _pad0: f32,
+ _pad1: f32,
+}
+struct VsOut{
+ @builtin(position) pos: vec4f,
+ @location(0) uv: vec2f,
+ @location(1) alpha: f32,
+}
+@group(0) @binding(0) var<uniform> uni: Uniforms;
+@group(0) @binding(1) var samp: sampler;
+@group(0) @binding(2) var tex: texture_2d<f32>;
+@vertex fn vsPt(
+ @builtin(vertex_index) vid: u32,
+ @builtin(instance_index) iid: u32,
+ @location(0) aPos: vec2f,
+ @location(1) aSpeed: f32,
+ @location(2) aAlpha: f32
+) -> VsOut {
+ var quad = array<vec2f,6>(
+  vec2f(-0.5, -0.5),
+  vec2f( 0.5, -0.5),
+  vec2f(-0.5,  0.5),
+  vec2f(-0.5,  0.5),
+  vec2f( 0.5, -0.5),
+  vec2f( 0.5,  0.5)
+ );
+ let q = quad[vid];
+ let psRaw = 1.0 + aSpeed * uni.scaleSize * 2500.0;
+ let ps = min(psRaw, uni.maxPointSize);
+ let center = vec2f(aPos.x * uni.scale.x, aPos.y * uni.scale.y);
+ let off = vec2f(q.x * ps * 2.0 / uni.viewport.x, q.y * ps * 2.0 / uni.viewport.y);
+ var out: VsOut;
+ out.pos = vec4f(center + off, 0.0, 1.0);
+ out.uv = vec2f(q.x + 0.5, 0.5 - q.y);
+ out.alpha = aAlpha;
+ return out;
+}
+@fragment fn fsPt(@location(0) uv: vec2f, @location(1) alpha: f32) -> @location(0) vec4f {
+ let c = textureSample(tex, samp, uv);
+ return vec4f(c.rgb, c.a * alpha);
+}
+`;
+
+// bg pipeline
+const bgModule=device.createShaderModule({code:bgWGSL});
+const ptModule=device.createShaderModule({code:ptWGSL});
+const bgPipeline=device.createRenderPipeline({
+ layout:"auto",
+ vertex:{
+  module:bgModule, entryPoint:"vsBg",
+  buffers:[{arrayStride:20, attributes:[
+   {shaderLocation:0, offset:0, format:"float32x2"},
+   {shaderLocation:1, offset:8, format:"float32x3"}
+  ]}]
+ },
+ fragment:{module:bgModule, entryPoint:"fsBg", targets:[{format:format}]},
+ primitive:{topology:"triangle-list", cullMode:"none"}
+});
+const ptPipeline=device.createRenderPipeline({
+ layout:"auto",
+ vertex:{
+  module:ptModule, entryPoint:"vsPt",
+  buffers:[{arrayStride:16, stepMode:"instance", attributes:[
+   {shaderLocation:0, offset:0, format:"float32x2"},
+   {shaderLocation:1, offset:8, format:"float32"},
+   {shaderLocation:2, offset:12, format:"float32"}
+  ]}]
+ },
+ fragment:{
+  module:ptModule, entryPoint:"fsPt",
+  targets:[{format:format, blend:{
+   color:{srcFactor:"src-alpha", dstFactor:"one", operation:"add"},
+   alpha:{srcFactor:"one", dstFactor:"one", operation:"add"}
+  }}]
+ },
+ primitive:{topology:"triangle-list", cullMode:"none"}
+});
+ // buffers
+ const bgDataF32=new Float32Array(bgMeshRaw);
+ const bgBuffer=device.createBuffer({size: bgDataF32.byteLength, usage: GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+ device.queue.writeBuffer(bgBuffer,0,bgDataF32);
+ const instanceBuffer=device.createBuffer({size: NUM_PARTICLES*16, usage: GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+ const uniformArray=new Float32Array(8); // 32 bytes
+ const uniformBuffer=device.createBuffer({size:32, usage: GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+ const sampler=device.createSampler({magFilter:"linear", minFilter:"linear", addressModeU:"clamp-to-edge", addressModeV:"clamp-to-edge"});
+ // texture
+ let dotTex=null, dotView=null, bindGroup=null;
+ async function createDotTexture(){
+  const url=DOT_SRC;
+  const res=await fetch(url);
+  const blob=await res.blob();
+  let bitmap;
+  try{
+   bitmap=await createImageBitmap(blob,{imageOrientation:"flipY", premultiplyAlpha:"none"});
+  }catch(e){
+   // fallback via Image
+   const img=await new Promise((res,rej)=>{
+    const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=url;
+   });
+   const off=document.createElement("canvas");
+   off.width=img.width; off.height=img.height;
+   const ctx=off.getContext("2d");
+   ctx.scale(1,-1); ctx.drawImage(img,0,-img.height);
+   bitmap=await createImageBitmap(off);
+  }
+  dotTex=device.createTexture({size:[bitmap.width, bitmap.height], format:"rgba8unorm", usage: GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
+  device.queue.copyExternalImageToTexture({source:bitmap},{texture:dotTex},[bitmap.width, bitmap.height]);
+  dotView=dotTex.createView();
+  bindGroup=device.createBindGroup({
+   layout:ptPipeline.getBindGroupLayout(0),
+   entries:[
+    {binding:0, resource:{buffer:uniformBuffer}},
+    {binding:1, resource:sampler},
+    {binding:2, resource:dotView}
+   ]
+  });
+ }
+ await createDotTexture();
+ const ptData=new Float32Array(NUM_PARTICLES*4);
+ function resizeGPU(){
+  var dpr=Math.min(window.devicePixelRatio||1,3);
+  var w=Math.floor(window.innerWidth*dpr);
+  var h=Math.floor(window.innerHeight*dpr);
+  if(canvas.width!==w || canvas.height!==h){
+   canvas.width=w; canvas.height=h;
+   canvas.style.width=window.innerWidth+"px";
+   canvas.style.height=window.innerHeight+"px";
+  }
+  // reconfigure if size changed (WebGPU requires same config, but viewport via render pass handles)
+  computeAspect();
+  scaleSize=dpr;
+  // update uniform buffer: scale, scaleSize, maxPointSize, viewport
+  uniformArray[0]=1.0/halfW;
+  uniformArray[1]=1.0/halfH;
+  uniformArray[2]=scaleSize;
+  uniformArray[3]=maxPointSize;
+  uniformArray[4]=canvas.width;
+  uniformArray[5]=canvas.height;
+  uniformArray[6]=0; uniformArray[7]=0;
+  device.queue.writeBuffer(uniformBuffer,0,uniformArray);
+ }
+ window.addEventListener("resize", resizeGPU);
+ resizeGPU();
+ function renderGPU(){
+  for(var i=0;i<NUM_PARTICLES;i++){
+   ptData[i*4]=px[i]; ptData[i*4+1]=py[i]; ptData[i*4+2]=pspeed[i]; ptData[i*4+3]=palpha[i];
+  }
+  device.queue.writeBuffer(instanceBuffer,0,ptData);
+  const encoder=device.createCommandEncoder();
+  const texView=context.getCurrentTexture().createView();
+  const pass=encoder.beginRenderPass({
+   colorAttachments:[{view:texView, clearValue:{r:0,g:0,b:0,a:1}, loadOp:"clear", storeOp:"store"}]
+  });
+  pass.setPipeline(bgPipeline);
+  pass.setVertexBuffer(0, bgBuffer);
+  pass.draw(bgVertexCount,1,0,0);
+  pass.setPipeline(ptPipeline);
+  pass.setVertexBuffer(0, instanceBuffer);
+  pass.setBindGroup(0, bindGroup);
+  pass.draw(6, NUM_PARTICLES,0,0);
+  pass.end();
+  device.queue.submit([encoder.finish()]);
+ }
+ var STEP=1000.0/30.0;
+ var acc=0;
+ var last=performance.now();
+ function frameGPU(now){
+  requestAnimationFrame(frameGPU);
+  var dt=now-last; last=now;
+  if(dt>250)dt=250;
+  acc+=dt;
+  var steps=0;
+  while(acc>=STEP && steps<6){ step(); acc-=STEP; steps++; }
+  // uniform scale may have changed via touch? only resize changes scale, so no per-frame update needed except viewport if resized
+  // but we push uniform each frame in case halfW changed due to resize (already handled)
+  renderGPU();
+ }
+ requestAnimationFrame(frameGPU);
+} else { console.error('WebGPU is not supported in this build'); document.body.style.background='#000'; }
+})();
+</script>
+<!--lw:body-->
+<script src="/wallpapers/bridge.js?v=0c7ade72" defer></script>
+<!--/lw:body-->
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" data-lw-slug="phase-beam">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase Beam</title>
+<style>
+html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden}
+canvas{display:block;position:fixed;top:0;left:0;width:100%;height:100%}
+</style>
+<!--lw:head-->
+<script src="/wallpapers/runtime.js?v=4b6e379c"></script>
+<script src="/wallpapers/wgpu-bridge.js?v=c16cfb9c"></script>
+<style id="lw-hide-ui">
+/* LW shell: the wallpaper ships without its own chrome. */
+#ui, #hud, #hud-panel, #hud-toggle, #hint, #hint-banner, #diag-banner, #dbg,
+#err, #msg, #error-overlay, #error-message,
+#loading-overlay, .top-bar, .bottom-dock, .hud-panel, #file { display: none !important; }
+#hud-panel { pointer-events: none !important; }
+html, body { background: #000; }
+</style>
+<!--/lw:head-->
+</head>
+<body>
+<canvas id="c"></canvas>
+<canvas id="c2" style="display:none"></canvas>
+<script type="module">
+// PhaseBeam — WebGPU-only build (WebGL fallback removed, no fallback on failure)
+// bg mesh 510 verts (MESH.length/5) + 2x POINTS 28 instanced quad
+// 2 pipelines: bg (opaque, no blend) + pt (src-alpha, one) ; uniform offX/scale DPR min(dpr,2)
+// 256-stride dynamic offset per-draw (hasDynamicOffset) — nexus.html fix
+const DOT_PNG = "phasebeam0.avif";
+const BEAM_PNG = "phasebeam1.avif";
+const MESH = [-0.75, 1.0, 0.0, 0.643, 1.1, -1.25, 1.0, 0.0, 0.776, 1.035, -1.0, 0.6, 0.0, 0.643, 1.1, 0.0, 1.0, 0.0, 0.6, 1.1, -0.75, 1.0, 0.0, 0.643, 1.1, -0.5, 0.6, 0.0, 0.643, 1.1, 0.625, 1.0, 0.194, 0.423, 0.569, 0.0, 1.0, 0.0, 0.6, 1.1, 0.375, 0.6, 0.207, 0.207, 0.487, 1.25, 1.0, 0.009, 0.09, 0.166, 0.625, 1.0, 0.194, 0.423, 0.569, 0.875, 0.4, 0.104, 0.091, 0.259, -1.0, 0.6, 0.0, 0.643, 1.1, -1.25, 1.0, 0.0, 0.776, 1.035, -1.25, 0.2, 0.362, 0.315, 0.66, -0.75, 0.4, 0.056, 0.6, 1.018, -1.0, 0.6, 0.0, 0.643, 1.1, -1.25, 0.2, 0.362, 0.315, 0.66, -0.5, 0.6, 0.0, 0.643, 1.1, -0.75, 1.0, 0.0, 0.643, 1.1, -1.0, 0.6, 0.0, 0.643, 1.1, -0.5, 0.6, 0.0, 0.643, 1.1, -1.0, 0.6, 0.0, 0.643, 1.1, -0.75, 0.4, 0.056, 0.6, 1.018, 0.0, 0.3, 0.138, 0.155, 0.522, 0.0, 1.0, 0.0, 0.6, 1.1, -0.5, 0.6, 0.0, 0.643, 1.1, 0.0, 0.3, 0.138, 0.155, 0.522, 0.375, 0.6, 0.207, 0.207, 0.487, 0.0, 1.0, 0.0, 0.6, 1.1, 0.875, 0.4, 0.104, 0.091, 0.259, 0.625, 1.0, 0.194, 0.423, 0.569, 0.375, 0.6, 0.207, 0.207, 0.487, 1.25, 0.1, 0.16, 0.0, 0.25, 1.25, 1.0, 0.009, 0.09, 0.166, 0.875, 0.4, 0.104, 0.091, 0.259, 0.375, -0.0, 0.104, 0.022, 0.198, 0.375, 0.6, 0.207, 0.207, 0.487, 0.0, 0.3, 0.138, 0.155, 0.522, -0.375, -0.0, 0.207, 0.207, 0.487, -0.5, 0.6, 0.0, 0.643, 1.1, -0.75, 0.4, 0.056, 0.6, 1.018, 0.0, 0.3, 0.138, 0.155, 0.522, -0.5, 0.6, 0.0, 0.643, 1.1, -0.375, -0.0, 0.207, 0.207, 0.487, -0.75, -0.1, 0.393, 0.189, 0.725, -0.75, 0.4, 0.056, 0.6, 1.018, -1.25, 0.2, 0.362, 0.315, 0.66, -0.75, -0.1, 0.393, 0.189, 0.725, -1.25, 0.2, 0.362, 0.315, 0.66, -1.25, -0.64, 0.143, 0.121, 0.574, -0.375, -0.0, 0.207, 0.207, 0.487, -0.75, 0.4, 0.056, 0.6, 1.018, -0.75, -0.1, 0.393, 0.189, 0.725, 0.375, -0.0, 0.104, 0.022, 0.198, 0.0, 0.3, 0.138, 0.155, 0.522, -0.375, -0.0, 0.207, 0.207, 0.487, 0.875, 0.4, 0.104, 0.091, 0.259, 0.375, 0.6, 0.207, 0.207, 0.487, 0.375, -0.0, 0.104, 0.022, 0.198, 1.25, 0.1, 0.16, 0.0, 0.25, 0.875, 0.4, 0.104, 0.091, 0.259, 0.375, -0.0, 0.104, 0.022, 0.198, -0.375, -0.5, 0.086, 0.017, 0.315, -0.75, -0.1, 0.393, 0.189, 0.725, -1.25, -0.64, 0.143, 0.121, 0.574, -0.375, -0.5, 0.086, 0.017, 0.315, -0.375, -0.0, 0.207, 0.207, 0.487, -0.75, -0.1, 0.393, 0.189, 0.725, 0.125, -0.5, 0.035, 0.004, 0.181, -0.375, -0.0, 0.207, 0.207, 0.487, -0.375, -0.5, 0.086, 0.017, 0.315, 0.125, -0.5, 0.035, 0.004, 0.181, 0.375, -0.0, 0.104, 0.022, 0.198, -0.375, -0.0, 0.207, 0.207, 0.487, 0.625, -0.4, 0.022, 0.009, 0.095, 0.375, -0.0, 0.104, 0.022, 0.198, 0.125, -0.5, 0.035, 0.004, 0.181, 0.625, -0.4, 0.022, 0.009, 0.095, 1.25, 0.1, 0.16, 0.0, 0.25, 0.375, -0.0, 0.104, 0.022, 0.198, 1.25, -1.0, 0.0, 0.129, 0.259, 1.25, 0.1, 0.16, 0.0, 0.25, 0.625, -0.4, 0.022, 0.009, 0.095, 1.25, -1.0, 0.0, 0.129, 0.259, 0.625, -0.4, 0.022, 0.009, 0.095, 0.375, -1.0, 0.0, 0.0, 0.0, 0.375, -1.0, 0.0, 0.0, 0.0, 0.625, -0.4, 0.022, 0.009, 0.095, 0.125, -0.5, 0.035, 0.004, 0.181, 0.375, -1.0, 0.0, 0.0, 0.0, 0.125, -0.5, 0.035, 0.004, 0.181, -0.5, -1.0, 0.017, 0.004, 0.078, -0.5, -1.0, 0.017, 0.004, 0.078, 0.125, -0.5, 0.035, 0.004, 0.181, -0.375, -0.5, 0.086, 0.017, 0.315, -0.5, -1.0, 0.017, 0.004, 0.078, -0.375, -0.5, 0.086, 0.017, 0.315, -1.25, -1.0, 0.16, 0.008, 0.008, -1.25, -0.64, 0.143, 0.121, 0.574, -1.25, -1.0, 0.16, 0.008, 0.008, -0.375, -0.5, 0.086, 0.017, 0.315];
+const DOT_COUNT = 28;
+const BG_OFFSET_X = -0.25;
+const PT_OFFSET_X = 1.0;
+
+const canvas = document.getElementById('c');
+
+function rand(a,b){ return a + Math.random()*(b-a); }
+function makeParticles(isDot){
+  const arr=[];
+  for(let i=0;i<DOT_COUNT;i++){
+    let p={x:0,y:0,z:0};
+    if(isDot){
+      p.x=rand(0,3); p.y=rand(-1.25,1.25);
+      if(i<3) p.z=14.0;
+      else if(i<7) p.z=25.0;
+      else if(i===10){ p.z=24.0; p.x=1.0; }
+      else p.z=rand(6.0,14.0);
+    }else{
+      if(i<20) p.z=rand(4.0,10.0)/2.0;
+      else p.z=rand(4.0,35.0)/2.0;
+      p.x=rand(-1.25,1.25); p.y=rand(-1.05,1.205);
+    }
+    arr.push(p);
+  }
+  return arr;
+}
+let dotParticles = makeParticles(true);
+let beamParticles = makeParticles(false);
+
+let uScaleSize = 1.0;
+let canvasW=0, canvasH=0;
+function computeScale(){
+  uScaleSize = 1.35 * (Math.min(canvasW, canvasH) / 720);
+}
+
+
+// ---------- WebGPU path ----------
+async function tryWebGPU(){
+  if(!navigator.gpu) return false;
+  try{
+    const adapter=await navigator.gpu.requestAdapter({powerPreference:'high-performance'});
+    if(!adapter) return false;
+    const device=await adapter.requestDevice();
+    let _pbctx=null;
+    const unconfigure=()=>{ try{ _pbctx?.unconfigure?.(); }catch{} };
+    device.lost.then(info=>{ unconfigure(); console.warn('[WebGPU] device lost',info); });
+    let ctx=canvas.getContext('webgpu'); _pbctx=ctx;
+    if(!ctx) { try{device.destroy();}catch(e){} return false; }
+    const fmt=navigator.gpu.getPreferredCanvasFormat();
+
+    // DPR min(dpr,2)
+    function resizeGPU(){
+      const dpr=Math.min(window.devicePixelRatio||1,2);
+      const w=Math.floor(window.innerWidth*dpr);
+      const h=Math.floor(window.innerHeight*dpr);
+      if(canvas.width!==w||canvas.height!==h){ canvas.width=w; canvas.height=h; }
+      canvasW=canvas.width; canvasH=canvas.height;
+      computeScale();
+    }
+    window.addEventListener('resize',()=>{ resizeGPU(); ctx.configure({device,format:fmt,alphaMode:'opaque'}); });
+    resizeGPU();
+    ctx.configure({device, format:fmt, alphaMode:'opaque'});
+
+    // BG mesh buffer (80+ verts, actually MESH.length/5 =102, keep 1:1)
+    const bgVertexCount=MESH.length/5|0;
+    const bgData=new Float32Array(bgVertexCount*6);
+    for(let i=0;i<bgVertexCount;i++){
+      const x=MESH[i*5+0], y=MESH[i*5+1], r=MESH[i*5+2], g=MESH[i*5+3], b=MESH[i*5+4];
+      bgData[i*6+0]=x; bgData[i*6+1]=y; bgData[i*6+2]=r; bgData[i*6+3]=g; bgData[i*6+4]=b; bgData[i*6+5]=1.0;
+    }
+    const bgBuffer=device.createBuffer({size: bgData.byteLength, usage: GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+    device.queue.writeBuffer(bgBuffer,0,bgData);
+
+    // Instanced quad (unit quad centered, size 1 => vertex shader scales)
+    const quadVerts=new Float32Array([
+      -0.5,-0.5,  0.5,-0.5, -0.5, 0.5,
+      -0.5, 0.5,  0.5,-0.5,  0.5, 0.5
+    ]);
+    const quadBuffer=device.createBuffer({size: quadVerts.byteLength, usage: GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+    device.queue.writeBuffer(quadBuffer,0,quadVerts);
+
+    // Instance buffers (dynamic)
+    const instanceStride=12; // vec3<f32>
+    const beamInstanceBuf=device.createBuffer({size: DOT_COUNT*instanceStride, usage: GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+    const dotInstanceBuf=device.createBuffer({size: DOT_COUNT*instanceStride, usage: GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});
+
+    // Uniform buffer with 256 stride, hasDynamicOffset
+    const UNIFORM_STRIDE=256;
+    const uniformBuf=device.createBuffer({size: UNIFORM_STRIDE*2, usage: GPUBufferUsage.UNIFORM|GPUBufferUsage.COPY_DST});
+    // layout: offX, scale, resW, resH + padding
+    function writeUniforms(){
+      const buf=new ArrayBuffer(UNIFORM_STRIDE*2);
+      const wgpuShift=((window.WallpaperGPU?.state?.offsetX ?? 0.5)-0.5)*0.8 + (window.WallpaperGPU?.state?.pointer?.down ? (window.WallpaperGPU.state.pointer.normX-0.5)*0.5 : 0);
+      const v0=new DataView(buf,0,UNIFORM_STRIDE);
+      v0.setFloat32(0, BG_OFFSET_X + wgpuShift*0.5, true);
+      v0.setFloat32(4, 0, true);
+      v0.setFloat32(8, canvasW, true);
+      v0.setFloat32(12, canvasH, true);
+      const v1=new DataView(buf,UNIFORM_STRIDE,UNIFORM_STRIDE);
+      v1.setFloat32(0, PT_OFFSET_X + wgpuShift, true);
+      v1.setFloat32(4, uScaleSize, true);
+      v1.setFloat32(8, canvasW, true);
+      v1.setFloat32(12, canvasH, true);
+      device.queue.writeBuffer(uniformBuf,0,buf);
+    }
+
+    // Textures & sampler
+    const sampler=device.createSampler({magFilter:'linear',minFilter:'linear',addressModeU:'clamp-to-edge',addressModeV:'clamp-to-edge'});
+    async function loadGPUTexture(dataUrl){
+      const img=new Image(); img.decoding='async'; img.src=dataUrl; await img.decode();
+      const bmp=await createImageBitmap(img, {premultiplyAlpha:'none', colorSpaceConversion:'none'});
+      const tex=device.createTexture({size:[bmp.width,bmp.height,1], format:'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING|GPUTextureUsage.COPY_DST|GPUTextureUsage.RENDER_ATTACHMENT});
+      device.queue.copyExternalImageToTexture({source:bmp},{texture:tex},[bmp.width,bmp.height]);
+      bmp.close();
+      return tex;
+    }
+    const [dotTexGPU, beamTexGPU]=await Promise.all([loadGPUTexture(DOT_PNG), loadGPUTexture(BEAM_PNG)]);
+
+    // BindGroupLayouts
+    const bglUniform=device.createBindGroupLayout({entries:[{binding:0, visibility:GPUShaderStage.VERTEX|GPUShaderStage.FRAGMENT, buffer:{type:'uniform', hasDynamicOffset:true, minBindingSize:16}}]});
+    const bglTex=device.createBindGroupLayout({entries:[{binding:0, visibility:GPUShaderStage.FRAGMENT, sampler:{type:'filtering'}},{binding:1, visibility:GPUShaderStage.FRAGMENT, texture:{sampleType:'float'}}]});
+
+    const uniformBG=device.createBindGroup({layout:bglUniform, entries:[{binding:0, resource:{buffer:uniformBuf, offset:0, size:16}}]});
+    const dotTexBG=device.createBindGroup({layout:bglTex, entries:[{binding:0,resource:sampler},{binding:1,resource:dotTexGPU.createView()}]});
+    const beamTexBG=device.createBindGroup({layout:bglTex, entries:[{binding:0,resource:sampler},{binding:1,resource:beamTexGPU.createView()}]} );
+
+    // WGSL - BG (no blend)
+    const bgWGSL=`
+struct U { offX:f32, scale:f32, resW:f32, resH:f32 }
+@group(0) @binding(0) var<uniform> u: U;
+struct VSIn { @location(0) pos: vec2<f32>, @location(1) col: vec4<f32> }
+struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) col: vec4<f32> }
+@vertex fn vs(in: VSIn)->VSOut{
+  var o:VSOut;
+  o.col=in.col;
+  o.pos=vec4<f32>(in.pos.x + u.offX/3.5, in.pos.y, 0.0, 1.0);
+  return o;
+}
+@fragment fn fs(in:VSOut)->@location(0) vec4<f32> { return in.col; }
+`;
+    // WGSL - PT (src-alpha one) instanced quad
+    const ptWGSL=`
+struct U { offX:f32, scale:f32, resW:f32, resH:f32 }
+@group(0) @binding(0) var<uniform> u: U;
+@group(1) @binding(0) var samp: sampler;
+@group(1) @binding(1) var tex: texture_2d<f32>;
+struct VSOut { @builtin(position) pos: vec4<f32>, @location(0) uv: vec2<f32>, @location(1) alpha: f32 }
+@vertex fn vs(@location(0) quad: vec2<f32>, @location(1) ipos: vec3<f32>) -> VSOut{
+  var o:VSOut;
+  let tmp = ipos.z * 7.0;
+  let vSize = 0.5 - tmp/1000.0;
+  var center = vec2<f32>(ipos.x, ipos.y);
+  center.x = center.x - u.offX * tmp / 100.0;
+  let pix = tmp * u.scale;
+  // pix is pointSize in physical pixels; convert to clip space
+  let sx = pix / u.resW * 2.0;
+  let sy = pix / u.resH * 2.0;
+  let q = quad * vec2<f32>(sx, sy);
+  let p = center + q;
+  o.pos = vec4<f32>(p, 0.0, 1.0);
+  o.uv = quad + vec2<f32>(0.5, 0.5);
+  o.uv.y = 1.0 - o.uv.y;
+  o.alpha = vSize;
+  return o;
+}
+@fragment fn fs(in:VSOut)->@location(0) vec4<f32>{
+  let c = textureSample(tex, samp, in.uv);
+  // premultiplied handling: original used non-premultiplied; we output straight with blend src-alpha one
+  return vec4<f32>(c.rgb, c.a * in.alpha);
+}
+`;
+    const bgModule=device.createShaderModule({code:bgWGSL});
+    const ptModule=device.createShaderModule({code:ptWGSL});
+
+    const bgPipeline=device.createRenderPipeline({
+      layout: device.createPipelineLayout({bindGroupLayouts:[bglUniform]}),
+      vertex:{module:bgModule, entryPoint:'vs', buffers:[
+        {arrayStride:24, attributes:[{shaderLocation:0, offset:0, format:'float32x2'},{shaderLocation:1, offset:8, format:'float32x4'}]}
+      ]},
+      fragment:{module:bgModule, entryPoint:'fs', targets:[{format:fmt}]},
+      primitive:{topology:'triangle-list'}
+    });
+    const ptPipeline=device.createRenderPipeline({
+      layout: device.createPipelineLayout({bindGroupLayouts:[bglUniform,bglTex]}),
+      vertex:{module:ptModule, entryPoint:'vs', buffers:[
+        {arrayStride:8, stepMode:'vertex', attributes:[{shaderLocation:0, offset:0, format:'float32x2'}]},
+        {arrayStride:12, stepMode:'instance', attributes:[{shaderLocation:1, offset:0, format:'float32x3'}]}
+      ]},
+      fragment:{module:ptModule, entryPoint:'fs', targets:[{format:fmt, blend:{color:{srcFactor:'src-alpha', dstFactor:'one', operation:'add'}, alpha:{srcFactor:'src-alpha', dstFactor:'one', operation:'add'}}}]},
+      primitive:{topology:'triangle-list'}
+    });
+
+    // Animation state
+    let lastTime=null;
+    function update(steps){
+      for(let i=0;i<DOT_COUNT;i++){
+        const beam=beamParticles[i], dot=dotParticles[i], nextBeamZ=beamParticles[(i+1)%DOT_COUNT].z;
+        if(beam.x/beam.z>0.5) beam.x=-1.0;
+        if(dot.x/dot.z>0.5) dot.x=-1.0;
+        if(beam.y>1.05){ beam.y=-1.05; beam.x=rand(-1.25,1.25); } else beam.y+=0.00016*beam.z*steps;
+        if(dot.y>1.25){ dot.y=-1.25; dot.x=rand(0,3); } else dot.y+=0.00022*dot.z*steps;
+        beam.x+=0.0001*beam.z*steps;
+        dot.x+=0.0001560*nextBeamZ*steps;
+      }
+    }
+    function writeInstances(){
+      const bArr=new Float32Array(DOT_COUNT*3), dArr=new Float32Array(DOT_COUNT*3);
+      for(let i=0;i<DOT_COUNT;i++){ bArr[i*3+0]=beamParticles[i].x; bArr[i*3+1]=beamParticles[i].y; bArr[i*3+2]=beamParticles[i].z; dArr[i*3+0]=dotParticles[i].x; dArr[i*3+1]=dotParticles[i].y; dArr[i*3+2]=dotParticles[i].z; }
+      device.queue.writeBuffer(beamInstanceBuf,0,bArr);
+      device.queue.writeBuffer(dotInstanceBuf,0,dArr);
+    }
+
+    function frame(t){
+      if(lastTime===null) lastTime=t;
+      let dt=t-lastTime; lastTime=t; if(dt>200) dt=66; const steps=dt/66.0;
+      update(steps);
+      writeUniforms();
+      writeInstances();
+      const encoder=device.createCommandEncoder();
+      const view=ctx.getCurrentTexture().createView();
+      const pass=encoder.beginRenderPass({
+        colorAttachments:[{view, clearValue:{r:0,g:0,b:0,a:1}, loadOp:'clear', storeOp:'store'}]
+      });
+      // bg - opaque, no blend, dynamic offset 0
+      pass.setPipeline(bgPipeline);
+      pass.setBindGroup(0, uniformBG, [0]);
+      pass.setVertexBuffer(0, bgBuffer);
+      pass.draw(bgVertexCount);
+      // beam - instanced quad, dynamic offset 256, src-alpha one
+      pass.setPipeline(ptPipeline);
+      pass.setBindGroup(0, uniformBG, [UNIFORM_STRIDE]);
+      pass.setBindGroup(1, beamTexBG);
+      pass.setVertexBuffer(0, quadBuffer);
+      pass.setVertexBuffer(1, beamInstanceBuf);
+      pass.draw(6, DOT_COUNT);
+      // dot - same pipeline, same uniform offset, different texture
+      pass.setBindGroup(1, dotTexBG);
+      pass.setVertexBuffer(1, dotInstanceBuf);
+      pass.draw(6, DOT_COUNT);
+      pass.end();
+      device.queue.submit([encoder.finish()]);
+      requestAnimationFrame(frame);
+    }
+    console.log('[WebGPU] PhaseBeam running format',fmt,'bgVerts',bgVertexCount,'DPR',Math.min(window.devicePixelRatio||1,2));
+    requestAnimationFrame(frame);
+    return true;
+  }catch(e){
+    console.error('[WebGPU] failed, falling back to WebGL —', e && e.message ? e.message : e, e);
+    return false;
+  }
+}
+
+(async()=>{
+  const ok=await tryWebGPU();
+  if(!ok){ console.error('WebGPU not supported or failed, no fallback in this build'); document.body.style.background='#000'; }
+})();
+</script>
+<!--lw:body-->
+<script src="/wallpapers/bridge.js?v=0c7ade72" defer></script>
+<!--/lw:body-->
+</body>
+</html>
