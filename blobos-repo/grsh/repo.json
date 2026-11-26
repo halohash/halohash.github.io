@@ -1,0 +1,7 @@
+{
+  "com.gravityshortcuts": {
+    "name": "gravity_shortcuts",
+    "icon": "/icon/phone.png",
+    "script": "https://halohash.github.io/blobos-repos/grsh/main.js"
+  }
+}
