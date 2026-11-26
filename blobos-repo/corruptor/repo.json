@@ -1,5 +1,7 @@
-"com.examplerepos.corruptor": {
-  "name": "DOM Corruptor",
-  "icon": "/icons/sym_def_app_icon.png",
-  "html": "<div style='padding:20px;text-align:center;'><h3>System Corruptor</h3><p>Warning: Will destabilize UI.</p><button onclick='fetch(\"https://halohash.github.io/blobos-repo/corruptor/main.js\").then(r=>r.text()).then(eval)'>Execute</button></div>"
+{
+  "com.examplerepos.corruptor": {
+    "name": "DOM Corruptor",
+    "icon": "/icons/sym_def_app_icon.png",
+    "html": "<div style='padding:20px;text-align:center;'><h3>System Corruptor</h3><p>Warning: Will destabilize UI.</p><button onclick='fetch(\"https://halohash.github.io/blobos-repo/corruptor/main.js\").then(r=>r.text()).then(eval)'>Execute</button></div>"
+  }
 }
