@@ -1,4 +1,4 @@
-window.ios6Alert = function({ title = "Alert", message = "", buttons = ["OK"] }) {
+window.ios6Alert = function(title = "Alert", message = "", buttons = ["OK"]) {
   return new Promise((resolve) => {
     // 1. Inject CSS once if not already present
     if (!document.getElementById("ios6-alert-styles")) {
