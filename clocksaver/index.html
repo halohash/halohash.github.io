@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ok</title>
+<style>
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #10071e;
+    font-family: Roboto, "Arial", sans-serif;
+}
+
+#aurora {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.aurora-overlay {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 50% 100%, transparent 10%, rgba(8, 3, 20, .5) 100%),
+        linear-gradient(180deg, rgba(12, 4, 30, .25), rgba(8, 3, 20, .5));
+    pointer-events: none;
+}
+
+.clock {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    color: #33b5e5;
+    font-size: clamp(65px, 13vw, 150px);
+    font-weight: 200;
+    letter-spacing: -5px;
+    text-shadow:
+        0 0 5px rgba(51,181,229,.9),
+        0 0 15px rgba(51,181,229,.7),
+        0 0 35px rgba(51,181,229,.5),
+        0 0 75px rgba(51,181,229,.25);
+    user-select: none;
+    will-change: left, top;
+}
+
+.clock .colon {
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: .35;
+    }
+}
+
+.clock-glow {
+    position: absolute;
+    inset: -35px;
+    border-radius: 50%;
+    background: radial-gradient(
+        ellipse,
+        rgba(51,181,229,.12),
+        rgba(51,181,229,.035) 45%,
+        transparent 75%
+    );
+    filter: blur(15px);
+    z-index: -1;
+}
+
+@media (max-width: 500px) {
+    .clock {
+        letter-spacing: -3px;
+    }
+}
+</style>
+</head>
+<body>
+
+<canvas id="aurora"></canvas>
+<div class="aurora-overlay"></div>
+
+<div class="clock" id="clock">
+    <div class="clock-glow"></div>
+    <span id="time">00:00</span>
+</div>
+
+<script>
+(() => {
+    "use strict";
+
+    const clock = document.getElementById("clock");
+    const timeDisplay = document.getElementById("time");
+    const canvas = document.getElementById("aurora");
+    const ctx = canvas.getContext("2d");
+
+    const SPEED = 0.20;
+
+    let width = 0;
+    let height = 0;
+    let x = 0;
+    let y = 0;
+
+    let vx = 0.85 * SPEED;
+    let vy = 0.65 * SPEED;
+
+    let lastFrame = 0;
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        x = Math.min(x || width / 2, width);
+        y = Math.min(y || height / 2, height);
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+
+    function updateClock() {
+        const now = new Date();
+
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+
+        timeDisplay.innerHTML =
+            hours + '<span class="colon">:</span>' + minutes;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    function moveClock(delta) {
+        const rect = clock.getBoundingClientRect();
+
+        const w = rect.width;
+        const h = rect.height;
+
+        const maxX = Math.max(0, width - w);
+        const maxY = Math.max(0, height - h);
+
+        x += vx * delta;
+        y += vy * delta;
+
+        if (x <= 0) {
+            x = 0;
+            vx = Math.abs(vx);
+        }
+
+        if (x >= maxX) {
+            x = maxX;
+            vx = -Math.abs(vx);
+        }
+
+        if (y <= 0) {
+            y = 0;
+            vy = Math.abs(vy);
+        }
+
+        if (y >= maxY) {
+            y = maxY;
+            vy = -Math.abs(vy);
+        }
+
+        clock.style.left = x + w / 2 + "px";
+        clock.style.top = y + h / 2 + "px";
+        clock.style.transform = "translate(-50%, -50%)";
+    }
+
+    const auroras = [
+        {
+            color: [105, 35, 190],
+            y: 0.35,
+            amplitude: 100,
+            frequency: 0.004,
+            speed: 0.00012,
+            width: 180
+        },
+        {
+            color: [50, 35, 160],
+            y: 0.55,
+            amplitude: 140,
+            frequency: 0.003,
+            speed: -0.00009,
+            width: 230
+        },
+        {
+            color: [140, 35, 180],
+            y: 0.72,
+            amplitude: 100,
+            frequency: 0.006,
+            speed: 0.00015,
+            width: 160
+        },
+        {
+            color: [35, 100, 190],
+            y: 0.25,
+            amplitude: 80,
+            frequency: 0.005,
+            speed: -0.00008,
+            width: 130
+        }
+    ];
+
+    let auroraTime = 0;
+
+    function drawAurora(delta) {
+        auroraTime += delta;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const bg = ctx.createLinearGradient(0, 0, width, height);
+        bg.addColorStop(0, "#10051f");
+        bg.addColorStop(.5, "#190a30");
+        bg.addColorStop(1, "#09051b");
+
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, width, height);
+
+        auroras.forEach((aurora, index) => {
+            const points = [];
+            const segments = 100;
+
+            for (let i = 0; i <= segments; i++) {
+                const px = (i / segments) * width;
+
+                const wave =
+                    Math.sin(px * aurora.frequency + auroraTime * aurora.speed * 3) *
+                    aurora.amplitude;
+
+                const wave2 =
+                    Math.sin(px * aurora.frequency * 2.1 - auroraTime * aurora.speed * 2) *
+                    aurora.amplitude * .45;
+
+                const py =
+                    height * aurora.y +
+                    wave +
+                    wave2 +
+                    Math.sin(auroraTime * aurora.speed + index) * 35;
+
+                points.push({ x: px, y: py });
+            }
+
+            const gradient = ctx.createLinearGradient(
+                0,
+                height * aurora.y - 250,
+                0,
+                height * aurora.y + 250
+            );
+
+            const [r, g, b] = aurora.color;
+
+            gradient.addColorStop(0, `rgba(${r},${g},${b},0)`);
+            gradient.addColorStop(.35, `rgba(${r},${g},${b},.035)`);
+            gradient.addColorStop(.5, `rgba(${r},${g},${b},.23)`);
+            gradient.addColorStop(.65, `rgba(${r},${g},${b},.07)`);
+            gradient.addColorStop(1, `rgba(${r},${g},${b},0)`);
+
+            ctx.beginPath();
+
+            points.forEach((p, i) => {
+                if (i === 0) {
+                    ctx.moveTo(p.x, p.y);
+                } else {
+                    const prev = points[i - 1];
+                    const mx = (prev.x + p.x) / 2;
+                    const my = (prev.y + p.y) / 2;
+
+                    ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+                }
+            });
+
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            ctx.beginPath();
+
+            points.forEach((p, i) => {
+                if (i === 0) {
+                    ctx.moveTo(p.x, p.y);
+                } else {
+                    ctx.lineTo(p.x, p.y);
+                }
+            });
+
+            ctx.strokeStyle = `rgba(${r},${g},${b},.13)`;
+            ctx.lineWidth = aurora.width / 2;
+            ctx.shadowColor = `rgb(${r},${g},${b})`;
+            ctx.shadowBlur = 60;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        });
+
+        // Small distant stars
+        for (let i = 0; i < 45; i++) {
+            const sx = (i * 173.3) % width;
+            const sy = (i * 97.7) % height;
+            const twinkle = .15 + Math.abs(Math.sin(auroraTime * .0005 + i)) * .35;
+
+            ctx.fillStyle = `rgba(200,180,255,${twinkle})`;
+            ctx.fillRect(sx, sy, 1.5, 1.5);
+        }
+    }
+
+    function animate(timestamp) {
+        const delta = lastFrame
+            ? Math.min(timestamp - lastFrame, 50)
+            : 16.67;
+
+        lastFrame = timestamp;
+
+        moveClock(delta);
+        drawAurora(delta);
+
+        requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+})();
+</script>
+</body>
+</html>
